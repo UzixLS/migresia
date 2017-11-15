@@ -3,6 +3,11 @@
 *.beam
 *.plt
 
+rebar.lock
+.rebar3/
+.idea/
+*.iml
+
 /ebin/
 /priv/migrate
 /include/*.hrl
