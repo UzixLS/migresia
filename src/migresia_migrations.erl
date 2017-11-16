@@ -131,21 +131,21 @@ load_migrations(Dir, FilterFun) ->
             throw(Err);
         Applied ->
             ToLoad = FilterFun(Migrations, Applied),
-            lists:map(fun({_, X}) ->
-                load_migration(Dir, binary_to_list(erlang:binary_part(X, 0, size(X) - 5)))
-              end, ToLoad)
+            lists:map(fun({Ts, FileName}) ->
+                        {Module, _} = load_migration(Dir, binary_to_list(erlang:binary_part(FileName, 0, size(FileName) - 5))),
+                        {Module, Ts}
+                      end, ToLoad)
     end.
 
 check_dir({error, _} = Err) -> throw(Err);
 check_dir({ok, Filenames}) -> normalize_names(Filenames, []).
 
-normalize_names([<<?FILEPREFIX, Short:14/bytes, ".beam">> = Name|T], Acc) ->
-    Int = list_to_integer(binary_to_list(Short)),
+normalize_names([<<?FILEPREFIX, Ts:14/bytes, ".beam">> = Name|T], Acc) ->
+    Int = list_to_integer(binary_to_list(Ts)),
     normalize_names(T, [{Int, Name}|Acc]);
-normalize_names([<<?FILEPREFIX, Short:14/bytes, $_, R/binary>> = Name|T], Acc)
-    when size(R) >= 5
-        andalso erlang:binary_part(R, size(R) - 5, 5) == <<".beam">> ->
-    Int = list_to_integer(binary_to_list(Short)),
+normalize_names([<<?FILEPREFIX, Ts:14/bytes, $_, R/binary>> = Name|T], Acc)
+        when size(R) >= 5 andalso erlang:binary_part(R, size(R) - 5, 5) == <<".beam">> ->
+    Int = list_to_integer(binary_to_list(Ts)),
     normalize_names(T, [{Int, Name}|Acc]);
 normalize_names([Name|T], Acc) when is_list(Name) ->
     normalize_names([list_to_binary(Name)|T], Acc);
