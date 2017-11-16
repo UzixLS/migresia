@@ -24,6 +24,8 @@
 
 -module(migresia_migrations).
 
+-compile({parse_transform, lager_transform}).
+
 -export([init_migrations/0,
     list_migrations/0,
     list_unapplied_ups/1,
@@ -47,10 +49,10 @@ init_migrations() ->
         true ->
             ok;
         false ->
-            io:format("Table schema_migration not found, creating...~n", []),
+            lager:info("Table ~w not found, creating", [?TABLE]),
             Attr = [{type, ordered_set}, {disc_copies, migresia:list_nodes()}],
             case mnesia:create_table(?TABLE, Attr) of
-                {atomic, ok}      -> io:format(" => created~n", []);
+                {atomic, ok}      -> ok;
                 {aborted, Reason} -> throw({error, Reason})
             end
     end.
@@ -159,10 +161,9 @@ check_table() ->
         false ->
             [];
         true ->
-            io:format("Waiting for tables...~n", []),
+            lager:info("Waiting for tables"),
             case mnesia:wait_for_tables([?TABLE], 5000) of
                 ok ->
-                    io:format(" => done~n", []),
                     Select = [{{?TABLE,'_','_'},[],['$_']}],
                     List = mnesia:dirty_select(?TABLE, Select),
                     [ X || {?TABLE, X, true} <- List ];
@@ -177,7 +178,7 @@ load_migration(Dir, Filename) ->
         {module, Module} ->
             {Module, code:get_object_code(Module)};
         {error, _} = Err ->
-            io:format("Error when loading module ~p.~n", [Filepath]),
+            lager:error("Error when loading module ~p", [Filepath]),
             throw(Err)
     end.
 
@@ -196,13 +197,13 @@ get_ts_bef_last1(List) -> hd(tl(lists:reverse(List))).
 %%------------------------------------------------------------------------------
 
 execute_up({Module, Ts}) ->
-    io:format("Executing up in ~s...~n", [Module]),
+    lager:info("Executing ~s:up", [Module]),
     Module:up(),
     mnesia:dirty_write(?TABLE, {?TABLE, Ts, true}),
-    io:format(" => done~n", []).
+    lager:info(" => done").
 
 execute_down({Module, Ts}) ->
-    io:format("Executing down in ~s...~n", [Module]),
+    lager:info("Executing ~s:down", [Module]),
     Module:down(),
     mnesia:dirty_delete(?TABLE, Ts),
-    io:format(" => done~n", []).
+    lager:info(" => done").

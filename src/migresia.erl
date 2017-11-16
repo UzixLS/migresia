@@ -24,6 +24,8 @@
 
 -module(migresia).
 
+-compile({parse_transform, lager_transform}).
+
 -export([start_all_mnesia/0,
     list_nodes/0,
     list_migrations/0,
@@ -37,12 +39,12 @@
 
 -spec start_all_mnesia() -> ok | {error, any()}.
 start_all_mnesia() ->
-    io:format("Starting Mnesia...~n", []),
+    lager:info("Starting Mnesia..."),
     case ensure_started(mnesia) of
         ok ->
             ensure_started_on_remotes(list_nodes());
         Err ->
-            io:format(" => Error:~p~n", [Err]),
+            lager:error(" => Error:~p", [Err]),
             Err
     end.
 
@@ -53,16 +55,16 @@ list_migrations() ->
     migresia_migrations:list_migrations().
 
 ensure_started_on_remotes(Nodes) ->
-    io:format("Ensuring Mnesia is running on nodes:~n~p~n", [Nodes]),
+    lager:info("Ensuring Mnesia is running on nodes: ~p", [Nodes]),
     {ResL, BadNodes} = rpc:multicall(Nodes, migresia, ensure_started, [mnesia]),
     handle_err([X || X <- ResL, X /= ok], BadNodes).
 
 handle_err([], []) ->
-    io:format(" => started~n", []),
+    lager:info(" => started"),
     ok;
 handle_err(Results, Bad) ->
-    if Results /= [] -> io:format(" => Error, received: ~p~n", [Results]) end,
-    if Bad /= [] -> io:format(" => Error, bad nodes: ~p~n", [Bad]) end,
+    if Results /= [] -> lager:error(" => Error, received: ~p", [Results]) end,
+    if Bad /= [] -> lager:error(" => Error, bad nodes: ~p", [Bad]) end,
     {error, mnesia_not_started}.
 
 -spec ensure_started(atom()) -> ok | {error, any()}.
@@ -99,7 +101,7 @@ migrate(Srcs) ->
     end.
 
 migrate1(Srcs) ->
-    io:format("Waiting for tables (max timeout 2 minutes)...~n", []),
+    lager:debug("Waiting for tables (up to 2 minutes)..."),
     ok = mnesia:wait_for_tables(mnesia:system_info(tables), 120000),
     case migresia_migrations:list_unapplied_ups(Srcs) of
         {error, _} = Err -> Err;
@@ -124,7 +126,7 @@ rollback(Srcs, Time) ->
     end.
 
 rollback1(Srcs, Time) ->
-    io:format("Waiting for tables (max timeout 2 minutes)...~n", []),
+    lager:debug("Waiting for tables (up to 2 minutes)..."),
     ok = mnesia:wait_for_tables(mnesia:system_info(tables), 120000),
     case migresia_migrations:list_applied_ups(Srcs, Time) of
         {error, _} = Err -> Err;

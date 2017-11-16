@@ -30,6 +30,6 @@
   {vsn, "0.0.4"},
   {modules, [migresia, migresia_migrations]},
   {registered, []},
-  {applications, [kernel, stdlib]}
+  {applications, [kernel, stdlib, lager]}
  ]
 }.
