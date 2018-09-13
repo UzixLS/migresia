@@ -36,6 +36,7 @@
 
 -define(FILEPREFIX, "db_").
 -define(TABLE, schema_migrations).
+-define(TABLE_WAIT, 5000).
 %% Surely no migrations before the first commit in migresia
 -define(FIRST_TS, 20130404041545).
 
@@ -161,8 +162,8 @@ check_table() ->
         false ->
             [];
         true ->
-            lager:info("Waiting for tables"),
-            case mnesia:wait_for_tables([?TABLE], 5000) of
+            lager:info("Waiting for table"),
+            case mnesia:wait_for_tables([?TABLE], ?TABLE_WAIT) of
                 ok ->
                     Select = [{{?TABLE,'_','_'},[],['$_']}],
                     List = mnesia:dirty_select(?TABLE, Select),

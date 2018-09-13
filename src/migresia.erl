@@ -35,6 +35,8 @@
     rollback/2,
     rollback_last/1]).
 
+-define(TABLES_WAIT, 120000).
+
 %%------------------------------------------------------------------------------
 
 -spec start_all_mnesia() -> ok | {error, any()}.
@@ -101,8 +103,8 @@ migrate(Srcs) ->
     end.
 
 migrate1(Srcs) ->
-    lager:debug("Waiting for tables (up to 2 minutes)..."),
-    ok = mnesia:wait_for_tables(mnesia:system_info(tables), 120000),
+    lager:debug("Waiting for tables..."),
+    ok = mnesia:wait_for_tables(mnesia:system_info(tables), ?TABLES_WAIT),
     case migresia_migrations:list_unapplied_ups(Srcs) of
         {error, _} = Err -> Err;
         Loaded -> apply_ups(Srcs, Loaded)
@@ -126,8 +128,8 @@ rollback(Srcs, Time) ->
     end.
 
 rollback1(Srcs, Time) ->
-    lager:debug("Waiting for tables (up to 2 minutes)..."),
-    ok = mnesia:wait_for_tables(mnesia:system_info(tables), 120000),
+    lager:debug("Waiting for tables..."),
+    ok = mnesia:wait_for_tables(mnesia:system_info(tables), ?TABLES_WAIT),
     case migresia_migrations:list_applied_ups(Srcs, Time) of
         {error, _} = Err -> Err;
         Ups -> apply_downs(Srcs, Ups, Time)
