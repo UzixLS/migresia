@@ -36,7 +36,7 @@
 
 -define(FILEPREFIX, "db_").
 -define(TABLE, schema_migrations).
--define(TABLE_WAIT, 5000).
+-define(TABLE_WAIT, 50000).
 %% Surely no migrations before the first commit in migresia
 -define(FIRST_TS, 20130404041545).
 
